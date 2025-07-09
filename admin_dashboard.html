@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block additional_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="app-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="admin-welcome">
+                <i class="fas fa-user-shield"></i>
+                <h2>Welcome, {{ admin_user.username }}</h2>
+            </div>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="{{ url_for('admin_dashboard') }}" class="nav-link active">
+                    <i class="fas fa-home"></i>
+                    Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('admin_users') }}" class="nav-link">
+                    <i class="fas fa-users"></i>
+                    User Details
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('admin_reports') }}" class="nav-link">
+                    <i class="fas fa-chart-bar"></i>
+                    Pollution Reports
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('admin_messages') }}" class="nav-link">
+                    <i class="fas fa-envelope"></i>
+                    Messages
+                    {% if unread_messages_count is defined and unread_messages_count > 0 %}
+                    <span class="notification-badge">{{ unread_messages_count }}</span>
+                    {% endif %}
+                </a>
+            </li>
+        </ul>
+        <a href="{{ url_for('logout') }}" class="logout-button">
+            <i class="fas fa-sign-out-alt"></i>
+            Logout
+        </a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="content-header">
+            <h1>Dashboard Overview</h1>
+        </div>
+        
+        <!-- Metrics Cards -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="metric-info">
+                    <h3>Total Users</h3>
+                    <p class="metric-value">{{ total_users }}</p>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+                <div class="metric-info">
+                    <h3>Team Heads</h3>
+                    <p class="metric-value">{{ total_teamheads }}</p>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div class="metric-info">
+                    <h3>Total Reports</h3>
+                    <p class="metric-value">{{ total_reports }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>Report Status Distribution</h3>
+                <canvas id="severityChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Pollution Type Distribution</h3>
+                <canvas id="typeChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Recent Reports Table -->
+        <div class="table-card">
+            <h3>Recent Reports</h3>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Location</th>
+                            <th>Type</th>
+                            <th>Severity</th>
+                            <th>Description</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report, user in recent_reports %}
+                        <tr>
+                            <td>{{ user.username }}</td>
+                            <td>{{ report.location }}</td>
+                            <td>{{ report.pollution_type }}</td>
+                            <td>
+                                <span class="severity-badge {{ report.severity.lower() }}">
+                                    {{ report.severity }}
+                                </span>
+                            </td>
+                            <td>{{ report.description[:100] }}...</td>
+                            <td>{{ report.timestamp|format_date }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_scripts %}
+<script>
+    // Severity Distribution Chart
+    const severityCtx = document.getElementById('severityChart').getContext('2d');
+    new Chart(severityCtx, {
+        type: 'pie',
+        data: {
+            labels: {{ severity_labels | tojson }},
+            datasets: [{
+                data: {{ severity_data | tojson }},
+                backgroundColor: [
+                    '#2ecc71',
+                    '#f1c40f',
+                    '#e74c3c'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    display: true
+                }
+            }
+        }
+    });
+
+    // Pollution Type Distribution Chart
+    const typeCtx = document.getElementById('typeChart').getContext('2d');
+    new Chart(typeCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ type_labels | tojson }},
+            datasets: [{
+                label: 'Number of Reports',
+                data: {{ type_data | tojson }},
+                backgroundColor: '#3498db',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
