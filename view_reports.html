@@ -1,0 +1,20 @@
+<table>
+    <thead>
+        <tr>
+            <th>Location</th>
+            <th>Pollution Type</th>
+            <th>Severity</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for report in reports %}
+        <tr>
+            <td>{{ report.location }}</td>
+            <td>{{ report.pollution_type }}</td>
+            <td>{{ report.severity }}</td>
+            <td>{{ report.description }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
