@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Pollution Reporting App{% endblock %}</title>
+    
+    <!-- Common CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    {% block additional_styles %}{% endblock %}
+
+    <!-- Common JavaScript libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
+    {% block head_scripts %}{% endblock %}
+</head>
+<body>
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                        <button type="button" class="close-alert">&times;</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    {% block content %}{% endblock %}
+
+    <!-- Common JavaScript -->
+    <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+    {% block additional_scripts %}{% endblock %}
+
+    <script>
+        // Common JavaScript for all pages
+        document.addEventListener('DOMContentLoaded', function() {
+            // Close flash messages
+            document.querySelectorAll('.close-alert').forEach(button => {
+                button.addEventListener('click', function() {
+                    this.parentElement.style.display = 'none';
+                });
+            });
+        });
+    </script>
+</body>
+</html> 
