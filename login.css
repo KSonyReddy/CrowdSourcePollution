@@ -1,0 +1,54 @@
+body {
+    background: url("https://i.pinimg.com/736x/7f/40/a5/7f40a59feffba48de7b6207b5e071f29.jpg") no-repeat center center fixed;
+    background-size: cover;
+    font-family: Arial;
+    margin: 0;
+    padding: 0;
+}
+
+.form-container {
+    position: absolute;
+    top: 25%;
+    left: 35%;
+    background: rgba(255, 255, 255, 0.1); /* translucent */
+    backdrop-filter: blur(6px); /* glass effect */
+    -webkit-backdrop-filter: blur(6px);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+    width: 300px;
+}
+
+input, select, button {
+    margin: 10px 0;
+    padding: 10px;
+    width: 100%;
+    border: none;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 14px;
+    outline: none;
+}
+
+input::placeholder,
+select {
+    color: #eee;
+}
+
+button {
+    background-color: rgba(0, 123, 255, 0.5);
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+button:hover {
+    background-color: rgba(0, 123, 255, 0.8);
+}
+
+h2, p, a {
+    color: white;
+    text-align: center;
+    text-decoration: none;
+}
