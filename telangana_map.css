@@ -1,0 +1,309 @@
+/* General Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f5f5f5;
+}
+
+/* Map Container */
+.map-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+}
+
+/* Header */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+header h1 {
+    font-size: 1.5rem;
+    color: #2c3e50;
+}
+
+.header-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+.login-button {
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 500;
+    background-color: #3498db;
+    color: white;
+    transition: background-color 0.3s;
+}
+
+.login-button:hover {
+    background-color: #2980b9;
+}
+
+/* Content Wrapper */
+.content-wrapper {
+    display: flex;
+    height: calc(100vh - 70px);
+    position: relative;
+}
+
+/* Map */
+#map {
+    flex: 1;
+    height: 100%;
+    z-index: 1;
+}
+
+/* Info Panel */
+.info-panel {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 300px;
+    background-color: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+    z-index: 1000;
+    max-height: calc(100vh - 90px);
+    overflow-y: auto;
+}
+
+/* District Info */
+.district-info {
+    margin-bottom: 1.5rem;
+}
+
+.district-info h2 {
+    font-size: 1.2rem;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.district-info h3 {
+    font-size: 1.1rem;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.district-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Legend */
+.legend {
+    margin-bottom: 1.5rem;
+}
+
+.legend h3 {
+    font-size: 1rem;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+}
+
+.legend-color.high {
+    background-color: #ff4444; /* Red */
+}
+
+.legend-color.moderate {
+    background-color: #4444ff; /* Blue */
+}
+
+.legend-color.low {
+    background-color: #44ff44; /* Green */
+}
+
+/* Reports Summary */
+.reports-summary {
+    margin-bottom: 1rem;
+}
+
+.reports-summary h3 {
+    font-size: 1rem;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.summary-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.stat-label {
+    font-weight: 500;
+}
+
+.stat-value {
+    font-weight: 600;
+}
+
+/* Severity Indicators */
+.severity {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.severity.high {
+    background-color: #ff4444; /* Red */
+    color: white;
+}
+
+.severity.moderate {
+    background-color: #4444ff; /* Blue */
+    color: white;
+}
+
+.severity.low {
+    background-color: #44ff44; /* Green */
+    color: #333;
+}
+
+/* Popup Content */
+.popup-content {
+    padding: 0.5rem;
+    max-width: 250px;
+}
+
+.popup-content h3 {
+    font-size: 1rem;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.popup-content p {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+/* Custom Marker */
+.custom-icon {
+    background: none;
+}
+
+.marker {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Reports List */
+.reports-list {
+    margin-bottom: 1.5rem;
+}
+
+.reports-list h3 {
+    font-size: 1rem;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.reports-list ul {
+    list-style: none;
+}
+
+.reports-list li {
+    padding: 0.5rem;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+}
+
+.reports-list li:last-child {
+    border-bottom: none;
+}
+
+/* Pollution Chart */
+.pollution-chart {
+    margin-bottom: 1rem;
+}
+
+.pollution-chart h3 {
+    font-size: 1rem;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.pollution-chart canvas {
+    width: 100% !important;
+    height: 200px !important;
+}
+.back-to-login {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #007bff; /* Bootstrap blue */
+    color: white;
+    padding: 12px 18px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease;
+    z-index: 999;
+}
+
+.back-to-login:hover {
+    background-color: #0056b3;
+}
+/* Responsive Design */
+@media (max-width: 768px) {
+    .content-wrapper {
+        flex-direction: column;
+    }
+    
+    .info-panel {
+        position: relative;
+        width: 100%;
+        max-height: none;
+        top: 0;
+        right: 0;
+        border-radius: 0;
+    }
+    
+    #map {
+        height: 50vh;
+    }
+} 
