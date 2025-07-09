@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telangana Pollution Map</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='telangana_map.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Telangana Pollution Map</h1>
+        <div class="header-buttons">
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('user_dashboard') }}" class="dashboard-button">Dashboard</a>
+                <a href="{{ url_for('logout') }}" class="logout-button">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}" class="login-button">Login</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="content-wrapper">
+        <div id="map"></div>
+        
+        <div class="info-panel">
+            <div class="district-info">
+                <h2>Pollution Overview</h2>
+                <div class="severity-count">
+                    <!-- Will be populated automatically by JavaScript -->
+                </div>
+            </div>
+
+            <div class="legend">
+                <h3>Legend</h3>
+                <div class="legend-item">
+                    <div class="legend-color high"></div>
+                    <span>High Severity</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color moderate"></div>
+                    <span>Moderate Severity</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color low"></div>
+                    <span>Low Severity</span>
+                </div>
+            </div>
+            <div id="map" style="height: 90vh;"></div>
+
+            <script>
+                window.reports = {{ reports | tojson }};
+            </script>
+            <script src="{{ url_for('static', filename='telangana_map.js') }}"></script>
+            
+            <div class="reports-list">
+                <h3>Recent Reports</h3>
+                <ul>
+                    <!-- Reports will be populated automatically by JavaScript -->
+                </ul>
+            </div>
+
+            <div class="pollution-chart">
+                <h3>Pollution Distribution</h3>
+                <canvas id="pollution-chart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    
+    <!-- Pass reports data to JavaScript -->
+    <script>
+        window.reports = {{ reports|tojson|safe }};
+    </script>
+    
+    
+    
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='telangana_map.js') }}"></script>
+
+</body>
+</html> 
