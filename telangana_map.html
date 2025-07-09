@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Telangana District Pollution Map</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #map { 
+            height: 100vh; 
+            width: 100%; 
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .info-panel {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 100%;
+            background: #f0f8ff;
+            padding: 20px;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        .badge {
+            padding: 5px 10px;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+        }
+        .high { background-color: red; }
+        .moderate { background-color: blue; }
+        .low { background-color: green; }
+        .popup-box {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .popup-box strong {
+            font-size: 16px;
+        }
+        .custom-div-icon {
+            background: none;
+            border: none;
+        }
+        .marker-pin {
+            width: 30px;
+            height: 42px;
+            border-radius: 50% 50% 50% 0;
+            position: relative;
+            transform: rotate(-45deg);
+            margin: -42px -15px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+        }
+        .marker-pin::after {
+            content: '';
+            width: 24px;
+            height: 24px;
+            margin: 3px 0 0 3px;
+            background: #fff;
+            position: absolute;
+            border-radius: 50%;
+        }
+        .back-to-login {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 8px 15px;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #333;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <a href="{{ url_for('login') }}" class="back-to-login">Back to Login</a>
+    <div id="map"></div>
+    <div class="info-panel" id="infoPanel">
+        <h3 id="districtName">District Information</h3>
+        <p><strong>Pollution Level:</strong> <span id="pollutionLevel" class="badge">-</span></p>
+     
+        <h4>Pollution Levels</h4>
+        <p><span class="badge high">High Pollution</span></p>
+        <p><span class="badge moderate">Moderate Pollution</span></p>
+        <p><span class="badge low">Low Pollution</span></p>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([17.385044, 78.486671], 7);
+        
+        // Add the tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 18
+        }).addTo(map);
+
+        // Initialize markers array
+        let markers = [];
+
+        // Default district data (fallback if server data is not available)
+        const defaultDistricts = [
+    {
+        "name": "Adilabad",
+        "lat": 19.6667,
+        "lon": 78.5333,
+        "pollution": {
+            "air": {
+                "level": "MODERATE",
+                "value": "55 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "30 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "MODERATE",
+                "value": "40 dB"
+            },
+            "water": {
+                "level": "MODERATE",
+                "value": "35 mg/L"
+            }
+        },
+        "overall": "MODERATE",
+        "reports": 0
+    },
+    {
+        "name": "Bhadradri Kothagudem",
+        "lat": 17.55,
+        "lon": 80.6333,
+        "pollution": {
+            "air": {
+                "level": "LOW",
+                "value": "30 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "15 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "LOW",
+                "value": "25 dB"
+            },
+            "water": {
+                "level": "LOW",
+                "value": "20 mg/L"
+            }
+        },
+        "overall": "LOW",
+        "reports": 0
+    },
+    {
+        "name": "Hyderabad",
+        "lat": 17.385,
+        "lon": 78.4867,
+        "pollution": {
+            "air": {
+                "level": "HIGH",
+                "value": "8 AQI"
+            },
+            "land": {
+                "level": "HIGH",
+                "value": "40 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "HIGH",
+                "value": "70 dB"
+            },
+            "water": {
+                "level": "HIGH",
+                "value": "50 mg/L"
+            }
+        },
+        "overall": "HIGH",
+        "reports": 0
+    },
+    {
+        "name": "Jagtial",
+        "lat": 18.8,
+        "lon": 78.9167,
+        "pollution": {
+            "air": {
+                "level": "LOW",
+                "value": "35 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "20 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "LOW",
+                "value": "30 dB"
+            },
+            "water": {
+                "level": "LOW",
+                "value": "25 mg/L"
+            }
+        },
+        "overall": "LOW",
+        "reports": 0
+    },
+    {
+        "name": "Jangaon",
+        "lat": 17.7,
+        "lon": 79.15,
+        "pollution": {
+            "air": {
+                "level": "MODERATE",
+                "value": "50 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "30 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "MODERATE",
+                "value": "40 dB"
+            },
+            "water": {
+                "level": "LOW",
+                "value": "35 mg/L"
+            }
+        },
+        "overall": "MODERATE",
+        "reports": 0
+    },
+    {
+        "name": "Jayashankar Bhupalapally",
+        "lat": 18.43,
+        "lon": 79.88,
+        "pollution": {
+            "air": {
+                "level": "MODERATE",
+                "value": "32 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "18 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "LOW",
+                "value": "30 dB"
+            },
+            "water": {
+                "level": "LOW",
+                "value": "22 mg/L"
+            }
+        },
+        "overall": "LOW",
+        "reports": 0
+    },
+    {
+        "name": "Jogulamba Gadwal",
+        "lat": 16.23,
+        "lon": 77.8,
+        "pollution": {
+            "air": {
+                "level": "MODERATE",
+                "value": "32 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "10 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "MODERATE",
+                "value": "42 dB"
+            },
+            "water": {
+                "level": "MODERATE",
+                "value": "38 mg/L"
+            }
+        },
+        "overall": "MODERATE",
+        "reports": 0
+    },
+    {
+        "name": "Kamareddy",
+        "lat": 18.32,
+        "lon": 78.34,
+        "pollution": {
+            "air": {
+                "level": "MODERATE",
+                "value": "34 AQI"
+            },
+            "land": {
+                "level": "MODERATE",
+                "value": "20 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "LOW",
+                "value": "39 dB"
+            },
+            "water": {
+                "level": "LOW",
+                "value": "24 mg/L"
+            }
+        },
+        "overall": "LOW",
+        "reports": 0
+    },
+    {
+        "name": "Karimnagar",
+        "lat": 18.4386,
+        "lon": 79.1288,
+        "pollution": {
+            "air": {
+                "level": "MODERATE",
+                "value": "58 AQI"
+            },
+            "land": {
+                "level": "MODERATE",
+                "value": "34 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "MODERATE",
+                "value": "48 dB"
+            },
+            "water": {
+                "level": "MODERATE",
+                "value": "40 mg/L"
+            }
+        },
+        "overall": "MODERATE",
+        "reports": 0
+    },
+    {
+        "name": "Khammam",
+        "lat": 17.25,
+        "lon": 80.15,
+        "pollution": {
+            "air": {
+                "level": "LOW",
+                "value": "31 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "18 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "LOW",
+                "value": "26 dB"
+            },
+            "water": {
+                "level": "LOW",
+                "value": "22 mg/L"
+            }
+        },
+        "overall": "LOW",
+        "reports": 0
+    },
+    {
+        "name": "Komaram Bheem",
+        "lat": 19.3667,
+        "lon": 79.5,
+        "pollution": {
+            "air": {
+                "level": "MODERATE",
+                "value": "61 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "36 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "MODERATE",
+                "value": "50 dB"
+            },
+            "water": {
+                "level": "MODERATE",
+                "value": "44 mg/L"
+            }
+        },
+        "overall": "MODERATE",
+        "reports": 0
+    },
+    {
+        "name": "Mahabubabad",
+        "lat": 17.6,
+        "lon": 80.0,
+        "pollution": {
+            "air": {
+                "level": "LOW",
+                "value": "28 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "15 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "LOW",
+                "value": "24 dB"
+            },
+            "water": {
+                "level": "LOW",
+                "value": "20 mg/L"
+            }
+        },
+        "overall": "LOW",
+        "reports": 0
+    },
+    {
+        "name": "Mahabubnagar",
+        "lat": 16.75,
+        "lon": 77.9833,
+        "pollution": {
+            "air": {
+                "level": "MODERATE",
+                "value": "65 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "38 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "MODERATE",
+                "value": "55 dB"
+            },
+            "water": {
+                "level": "MODERATE",
+                "value": "48 mg/L"
+            }
+        },
+        "overall": "MODERATE",
+        "reports": 0
+    },
+    {
+        "name": "Mancherial",
+        "lat": 18.87,
+        "lon": 79.44,
+        "pollution": {
+            "air": {
+                "level": "HIGH",
+                "value": "78 AQI"
+            },
+            "land": {
+                "level": "MODERATE",
+                "value": "45 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "MODERATE",
+                "value": "65 dB"
+            },
+            "water": {
+                "level": "MODERATE",
+                "value": "55 mg/L"
+            }
+        },
+        "overall": "HIGH",
+        "reports": 0
+    },
+    {
+        "name": "Medak",
+        "lat": 18.036,
+        "lon": 78.2699,
+        "pollution": {
+            "air": {
+                "level": "LOW",
+                "value": "37 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "22 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "20 lux"
+            },
+            "noise": {
+                "level": "LOW",
+                "value": "30 dB"
+            },
+            "water": {
+                "level": "LOW",
+                "value": "25 mg/L"
+            }
+        },
+        "overall": "LOW",
+        "reports": 0
+    },
+    {
+        "name": "Medchal\u2013Malkajgiri",
+        "lat": 17.5,
+        "lon": 78.6,
+        "pollution": {
+            "air": {
+                "level": "MODERATE",
+                "value": "63 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "39 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "MODERATE",
+                "value": "52 dB"
+            },
+            "water": {
+                "level": "MODERATE",
+                "value": "46 mg/L"
+            }
+        },
+        "overall": "MODERATE",
+        "reports": 0
+    },
+    {
+        "name": "Mulugu",
+        "lat": 18.1,
+        "lon": 80.1,
+        "pollution": {
+            "air": {
+                "level": "LOW",
+                "value": "26 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "14 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "LOW",
+                "value": "22 dB"
+            },
+            "water": {
+                "level": "LOW",
+                "value": "18 mg/L"
+            }
+        },
+        "overall": "LOW",
+        "reports": 0
+    },
+    {
+        "name": "Nagarkurnool",
+        "lat": 16.4833,
+        "lon": 78.3167,
+        "pollution": {
+            "air": {
+                "level": "MODERATE",
+                "value": "50 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "29 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "MODERATE",
+                "value": "40 dB"
+            },
+            "water": {
+                "level": "LOW",
+                "value": "36 mg/L"
+            }
+        },
+        "overall": "MODERATE",
+        "reports": 0
+    },
+    {
+        "name": "Nalgonda",
+        "lat": 17.05,
+        "lon": 79.27,
+        "pollution": {
+            "air": {
+                "level": "MODERATE",
+                "value": "54 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "33 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "MODERATE",
+                "value": "45 dB"
+            },
+            "water": {
+                "level": "LOW",
+                "value": "38 mg/L"
+            }
+        },
+        "overall": "MODERATE",
+        "reports": 0
+    },
+    {
+        "name": "Narayanpet",
+        "lat": 16.75,
+        "lon": 77.5,
+        "pollution": {
+            "air": {
+                "level": "LOW",
+                "value": "33 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "17 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "LOW",
+                "value": "28 dB"
+            },
+            "water": {
+                "level": "LOW",
+                "value": "22 mg/L"
+            }
+        },
+        "overall": "LOW",
+        "reports": 0
+    },
+    {
+        "name": "Nirmal",
+        "lat": 19.1,
+        "lon": 78.35,
+        "pollution": {
+            "air": {
+                "level": "MODERATE",
+                "value": "57 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "31 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "MODERATE",
+                "value": "46 dB"
+            },
+            "water": {
+                "level": "LOW",
+                "value": "39 mg/L"
+            }
+        },
+        "overall": "MODERATE",
+        "reports": 0
+    },
+    {
+        "name": "Nizamabad",
+        "lat": 18.67,
+        "lon": 78.1,
+        "pollution": {
+            "air": {
+                "level": "LOW",
+                "value": "36 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "21 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "LOW",
+                "value": "30 dB"
+            },
+            "water": {
+                "level": "LOW",
+                "value": "25 mg/L"
+            }
+        },
+        "overall": "LOW",
+        "reports": 0
+    },
+    {
+        "name": "Peddapalli",
+        "lat": 18.6167,
+        "lon": 79.3833,
+        "pollution": {
+            "air": {
+                "level": "HIGH",
+                "value": "75 AQI"
+            },
+            "land": {
+                "level": "MODERATE",
+                "value": "42 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "MODERATE",
+                "value": "60 dB"
+            },
+            "water": {
+                "level": "MODERATE",
+                "value": "52 mg/L"
+            }
+        },
+        "overall": "HIGH",
+        "reports": 0
+    },
+    {
+        "name": "Rajanna Sircilla",
+        "lat": 18.3833,
+        "lon": 78.8,
+        "pollution": {
+            "air": {
+                "level": "LOW",
+                "value": "29 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "16 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "LOW",
+                "value": "24 dB"
+            },
+            "water": {
+                "level": "LOW",
+                "value": "20 mg/L"
+            }
+        },
+        "overall": "LOW",
+        "reports": 0
+    },
+    {
+        "name": "Rangareddy",
+        "lat": 17.3,
+        "lon": 78.4,
+        "pollution": {
+            "air": {
+                "level": "MODERATE",
+                "value": "59 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "36 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "MODERATE",
+                "value": "50 dB"
+            },
+            "water": {
+                "level": "MODERATE",
+                "value": "43 mg/L"
+            }
+        },
+        "overall": "MODERATE",
+        "reports": 0
+    },
+    {
+        "name": "Sangareddy",
+        "lat": 17.625,
+        "lon": 78.0867,
+        "pollution": {
+            "air": {
+                "level": "LOW",
+                "value": "39 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "23 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "LOW",
+                "value": "42 dB"
+            },
+            "water": {
+                "level": "LOW",
+                "value": "27 mg/L"
+            }
+        },
+        "overall": "LOW",
+        "reports": 0
+    },
+    {
+        "name": "Siddipet",
+        "lat": 18.1018,
+        "lon": 78.8521,
+        "pollution": {
+            "air": {
+                "level": "MODERATE",
+                "value": "56 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "32 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "MODERATE",
+                "value": "45 dB"
+            },
+            "water": {
+                "level": "LOW",
+                "value": "38 mg/L"
+            }
+        },
+        "overall": "MODERATE",
+        "reports": 0
+    },
+    {
+        "name": "Suryapet",
+        "lat": 17.15,
+        "lon": 79.6333,
+        "pollution": {
+            "air": {
+                "level": "LOW",
+                "value": "33 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "19 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "LOW",
+                "value": "28 dB"
+            },
+            "water": {
+                "level": "LOW",
+                "value": "23 mg/L"
+            }
+        },
+        "overall": "LOW",
+        "reports": 0
+    },
+    {
+        "name": "Vikarabad",
+        "lat": 17.3333,
+        "lon": 77.9,
+        "pollution": {
+            "air": {
+                "level": "MODERATE",
+                "value": "52 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "30 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "MODERATE",
+                "value": "41 dB"
+            },
+            "water": {
+                "level": "LOW",
+                "value": "35 mg/L"
+            }
+        },
+        "overall": "MODERATE",
+        "reports": 0
+    },
+    {
+        "name": "Wanaparthy",
+        "lat": 16.3667,
+        "lon": 78.0667,
+        "pollution": {
+            "air": {
+                "level": "LOW",
+                "value": "32 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "18 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "LOW",
+                "value": "27 dB"
+            },
+            "water": {
+                "level": "LOW",
+                "value": "22 mg/L"
+            }
+        },
+        "overall": "LOW",
+        "reports": 0
+    },
+    {
+        "name": "Warangal",
+        "lat": 17.9784,
+        "lon": 79.5941,
+        "pollution": {
+            "air": {
+                "level": "HIGH",
+                "value": "77 AQI"
+            },
+            "land": {
+                "level": "MODERATE",
+                "value": "44 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "HIGH",
+                "value": "62 dB"
+            },
+            "water": {
+                "level": "HIGH",
+                "value": "54 mg/L"
+            }
+        },
+        "overall": "HIGH",
+        "reports": 0
+    },
+    {
+        "name": "Yadadri Bhuvanagiri",
+        "lat": 17.5,
+        "lon": 79.0,
+        "pollution": {
+            "air": {
+                "level": "MODERATE",
+                "value": "51 AQI"
+            },
+            "land": {
+                "level": "LOW",
+                "value": "28 %"
+            },
+            "light": {
+                "level": "LOW",
+                "value": "10 lux"
+            },
+            "noise": {
+                "level": "MODERATE",
+                "value": "40 dB"
+            },
+            "water": {
+                "level": "LOW",
+                "value": "34 mg/L"
+            }
+        },
+        "overall": "MODERATE",
+        "reports": 0
+    }
+];
+
+        // Function to load pollution data from the server
+        function loadPollutionData() {
+            console.log('Loading pollution data...');
+            fetch('/get_reports')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Received data:', data);
+                    let districtsToDisplay = [];
+                    
+                    if (data.success && data.reports && data.reports.length > 0) {
+                        console.log('Processing user reports:', data.reports.length);
+                        // Create a map of user reports by district
+                        const userReportsByDistrict = {};
+                        data.reports.forEach(report => {
+                            // Normalize district name to match defaultDistricts
+                            const districtName = report.location.trim();
+                            if (!userReportsByDistrict[districtName]) {
+                                userReportsByDistrict[districtName] = [];
+                            }
+                            // Map severity levels
+                            let normalizedSeverity = report.severity.toUpperCase();
+                            if (normalizedSeverity === 'MEDIUM') {
+                                normalizedSeverity = 'MODERATE';
+                            }
+                            
+                            userReportsByDistrict[districtName].push({
+                                ...report,
+                                severity: normalizedSeverity,
+                                pollution_type: report.pollution_type.toLowerCase()
+                            });
+                        });
+
+                        // Process each district
+                        districtsToDisplay = defaultDistricts.map(district => {
+                            const districtReports = userReportsByDistrict[district.name] || [];
+                            
+                            if (districtReports.length > 0) {
+                                console.log(`Processing district ${district.name} with ${districtReports.length} reports`);
+                                
+                                // Group reports by pollution type
+                                const reportsByType = {
+                                    air: [], water: [], noise: [], land: [], light: []
+                                };
+                                
+                                districtReports.forEach(report => {
+                                    const type = report.pollution_type;
+                                    if (reportsByType.hasOwnProperty(type)) {
+                                        reportsByType[type].push(report);
+                                    }
+                                });
+
+                                // Calculate severity for each pollution type
+                                const pollutionLevels = {};
+                                Object.entries(reportsByType).forEach(([type, reports]) => {
+                                    if (reports.length > 0) {
+                                        // Sort reports by timestamp to get the most recent one
+                                        reports.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                                        
+                                        // Use the most recent report's severity
+                                        const mostRecentReport = reports[0];
+                                        pollutionLevels[type] = mostRecentReport.severity;
+                                        
+                                        console.log(`${district.name} - ${type} most recent severity:`, mostRecentReport.severity);
+                                    }
+                                });
+
+                                console.log(`${district.name} pollution levels:`, pollutionLevels);
+
+                                // Update district's pollution data
+                                const updatedPollution = {
+                                    air: {
+                                        level: pollutionLevels.air || district.pollution.air.level,
+                                        value: district.pollution.air.value
+                                    },
+                                    water: {
+                                        level: pollutionLevels.water || district.pollution.water.level,
+                                        value: district.pollution.water.value
+                                    },
+                                    noise: {
+                                        level: pollutionLevels.noise || district.pollution.noise.level,
+                                        value: district.pollution.noise.value
+                                    },
+                                    land: {
+                                        level: pollutionLevels.land || district.pollution.land.level,
+                                        value: district.pollution.land.value
+                                    },
+                                    light: {
+                                        level: pollutionLevels.light || district.pollution.light.level,
+                                        value: district.pollution.light.value
+                                    }
+                                };
+
+                                // Calculate overall severity based on the most recent reports
+                                let overallSeverity = 'LOW';
+                                const severities = Object.values(pollutionLevels);
+                                
+                                if (severities.includes('HIGH')) {
+                                    overallSeverity = 'HIGH';
+                                } else if (severities.includes('MODERATE')) {
+                                    overallSeverity = 'MODERATE';
+                                }
+
+                                console.log(`${district.name} final severity:`, overallSeverity);
+
+                                return {
+                                    ...district,
+                                    pollution: updatedPollution,
+                                    severity: overallSeverity,
+                                    totalReports: districtReports.length
+                                };
+                            } else {
+                                return {
+                                    ...district,
+                                    severity: district.overall,
+                                    totalReports: 0
+                                };
+                            }
+                        });
+                    } else {
+                        console.log('No user reports found, using default data');
+                        districtsToDisplay = defaultDistricts.map(district => ({
+                            ...district,
+                            severity: district.overall,
+                            totalReports: 0
+                        }));
+                    }
+
+                    console.log('Processed districts:', districtsToDisplay);
+                    updateMapWithData(districtsToDisplay);
+                })
+                .catch(error => {
+                    console.error('Error loading pollution data:', error);
+                    const defaultDataWithReports = defaultDistricts.map(district => ({
+                        ...district,
+                        severity: district.overall,
+                        totalReports: 0
+                    }));
+                    updateMapWithData(defaultDataWithReports);
+                });
+        }
+
+        // Function to update map with new data
+        function updateMapWithData(districts) {
+            console.log('Updating map with districts:', districts); // Debug log
+            
+            // Clear existing markers
+            markers.forEach(marker => marker.remove());
+            markers = [];
+
+            // Add new markers
+            districts.forEach(district => {
+                const marker = L.marker([district.lat, district.lon], {
+                    icon: L.divIcon({
+                        className: 'custom-div-icon',
+                        html: `<div class="marker-pin" style="background-color: ${getColorForSeverity(district.severity)}"></div>`,
+                        iconSize: [30, 42],
+                        iconAnchor: [15, 42]
+                    })
+                });
+
+                marker.bindPopup(createPopupContent(district));
+                marker.addTo(map);
+                markers.push(marker);
+            });
+        }
+
+        // Function to get color based on severity
+        function getColorForSeverity(severity) {
+            switch(severity) {
+                case 'HIGH': return 'red';
+                case 'MODERATE': return 'blue';
+                case 'LOW': return 'green';
+                default: return 'gray';
+            }
+        }
+
+        // Function to create popup content for a district
+        function createPopupContent(district) {
+            let content = `
+                <div class="popup-box">
+                    <strong>${district.name}</strong><br>
+                    Overall Severity: <span class="badge ${district.severity.toLowerCase()}">${district.severity}</span><br>
+                    <b>Pollution Types:</b><br>
+            `;
+            
+            if (district.pollution) {
+                Object.entries(district.pollution).forEach(([type, data]) => {
+                    content += `
+                        ${type.charAt(0).toUpperCase() + type.slice(1)}: 
+                        <span class="badge ${data.level.toLowerCase()}">${data.level}</span> 
+                        ${data.value}<br>
+                    `;
+                });
+            }
+            
+            content += `Total Reports: ${district.totalReports || 0}</div>`;
+            return content;
+        }
+
+        // Initialize the map with data
+        loadPollutionData();
+        
+        // Set up WebSocket connection for real-time updates
+        const socket = io();
+        
+        socket.on('connect', function() {
+            console.log('WebSocket connected');
+        });
+        
+        socket.on('disconnect', function() {
+            console.log('WebSocket disconnected');
+        });
+        
+        socket.on('pollution_update', function(data) {
+            console.log('Received pollution update:', data);
+            // Reload pollution data when a new report is added
+            loadPollutionData();
+            
+            // Show a notification
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = `New pollution report for ${data.feature.properties.name}`;
+            notification.style.position = 'absolute';
+            notification.style.top = '10px';
+            notification.style.left = '50%';
+            notification.style.transform = 'translateX(-50%)';
+            notification.style.backgroundColor = 'rgba(0, 128, 0, 0.8)';
+            notification.style.color = 'white';
+            notification.style.padding = '10px 20px';
+            notification.style.borderRadius = '5px';
+            notification.style.zIndex = '1000';
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</body>
+</html>
