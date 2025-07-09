@@ -1,0 +1,34 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #ecf0f1;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 50px;
+}
+
+.profile-container {
+    background: white;
+    padding: 30px 40px;
+    border-radius: 10px;
+    box-shadow: 0 0 12px rgba(0,0,0,0.1);
+    width: 400px;
+    text-align: center;
+}
+
+.profile-container h2 {
+    color: #2c3e50;
+    margin-bottom: 30px;
+}
+
+.profile-container p {
+    font-size: 18px;
+    margin: 10px 0;
+}
+
+.profile-container span {
+    font-weight: bold;
+    color: #2980b9;
+}
