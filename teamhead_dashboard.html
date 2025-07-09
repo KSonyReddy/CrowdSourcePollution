@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Head Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='teamhead_dashboard.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const districtPollutionData = {{ pollution_data | safe }};
+    </script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>Team Head Dashboard</h2>
+                <p>{{ current_user.username }}</p>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#dashboard" class="nav-link active" data-section="dashboard"><i class="fas fa-home"></i> Dashboard</a></li>
+                <li><a href="#reports" class="nav-link" data-section="reports"><i class="fas fa-file-alt"></i> Reports</a></li>
+                <li><a href="#volunteers" class="nav-link" data-section="volunteers"><i class="fas fa-users"></i> Volunteers</a></li>
+                <li><a href="#messages" class="nav-link" data-section="messages"><i class="fas fa-envelope"></i> Messages <span class="notification-badge">{{ unread_messages }}</span></a></li>
+                <li><a href="#awards" class="nav-link" data-section="awards"><i class="fas fa-award"></i> Awards</a></li>
+                <li><a href="#profile" class="nav-link" data-section="profile"><i class="fas fa-user"></i> Profile</a></li>
+                <li><a href="{{ url_for('logout') }}" class="nav-link"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Dashboard Section -->
+            <div id="dashboard" class="section active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">{{ total_reports }}</div>
+                        <div class="stat-label">Total Reports</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ active_volunteers }}</div>
+                        <div class="stat-label">Active Volunteers</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ critical_reports }}</div>
+                        <div class="stat-label">Critical Reports</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ total_awards }}</div>
+                        <div class="stat-label">Total Awards</div>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>Reports by Type</h3>
+                        <canvas id="reportsByTypeChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Reports by Severity</h3>
+                        <canvas id="reportsBySeverityChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Report Trends</h3>
+                        <canvas id="reportTrendsChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Volunteer Activity</h3>
+                        <canvas id="volunteerActivityChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Recent Reports</h3>
+                        <button class="btn btn-primary btn-sm" onclick="showSection('reports')">View All</button>
+                    </div>
+                    <div class="reports-list">
+                        {% for report in recent_reports %}
+                        <div class="report-card">
+                            <div class="report-header">
+                                <h4 class="report-title">{{ report.title }}</h4>
+                                <span class="severity-badge {{ report.severity.lower() }}">{{ report.severity }}</span>
+                            </div>
+                            <div class="report-meta">
+                                <span><i class="fas fa-map-marker-alt"></i> {{ report.location }}</span>
+                                <span><i class="fas fa-calendar"></i> {{ report.date }}</span>
+                                <span><i class="fas fa-user"></i> {{ report.reporter }}</span>
+                            </div>
+                            <p class="report-description">{{ report.description }}</p>
+                            <div class="report-footer">
+                                <button class="btn btn-primary btn-sm" onclick="viewReport({{ report.id }})">View Details</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports Section -->
+            <div id="reports" class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Reports</h3>
+                        <div class="filters">
+                            <div class="filter-group">
+                                <label for="severityFilter">Severity:</label>
+                                <select id="severityFilter">
+                                    <option value="all">All</option>
+                                    <option value="low">Low</option>
+                                    <option value="moderate">Moderate</option>
+                                    <option value="high">High</option>
+                                    <option value="critical">Critical</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label for="typeFilter">Type:</label>
+                                <select id="typeFilter">
+                                    <option value="all">All</option>
+                                    <option value="air">Air Pollution</option>
+                                    <option value="water">Water Pollution</option>
+                                    <option value="soil">Soil Pollution</option>
+                                    <option value="noise">Noise Pollution</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="reports-list" id="filteredReports">
+                        {% for report in reports %}
+                        <div class="report-card" data-severity="{{ report[0].severity.lower() }}" data-type="{{ report[0].pollution_type.lower() }}">
+                            <div class="report-header">
+                                <h4 class="report-title">{{ report[0].title }}</h4>
+                                <span class="severity-badge {{ report[0].severity.lower() }}">{{ report[0].severity }}</span>
+                            </div>
+                            <div class="report-meta">
+                                <span><i class="fas fa-map-marker-alt"></i> {{ report[0].location }}</span>
+                                <span><i class="fas fa-calendar"></i> {{ report[0].timestamp|format_date }}</span>
+                                <span><i class="fas fa-user"></i> {{ report[1].username }}</span>
+                            </div>
+                            <p class="report-description">{{ report[0].description }}</p>
+                            <div class="report-footer">
+                                <button class="btn btn-primary btn-sm" onclick="viewReport({{ report[0].id }})">View Details</button>
+                                <button class="btn btn-secondary btn-sm" onclick="assignVolunteer({{ report[0].id }})">Assign Volunteer</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Volunteers Section -->
+            <div id="volunteers" class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Volunteers</h3>
+                        <button class="btn btn-primary" onclick="showModal('addVolunteerModal')">Add Volunteer</button>
+                    </div>
+                    <div class="volunteers-grid">
+                        {% for volunteer in volunteers %}
+                        <div class="volunteer-card">
+                            <div class="volunteer-header">
+                                <div class="volunteer-avatar">{{ volunteer.username[0] }}</div>
+                                <div class="volunteer-info">
+                                    <h3>{{ volunteer.username }}</h3>
+                                    <span class="volunteer-status {{ 'active' if volunteer_activity.get(volunteer.id, 0) > 0 else 'inactive' }}">
+                                        {{ 'Active' if volunteer_activity.get(volunteer.id, 0) > 0 else 'Inactive' }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="volunteer-stats">
+                                <span><i class="fas fa-file-alt"></i> {{ volunteer_activity.get(volunteer.id, 0) }} Reports</span>
+                                <span><i class="fas fa-award"></i> {{ volunteer.awards_received|length }} Awards</span>
+                            </div>
+                            <div class="volunteer-actions">
+                                <button class="btn btn-primary btn-sm" onclick="viewVolunteerProfile({{ volunteer.id }})">View Profile</button>
+                                <button class="btn btn-secondary btn-sm" onclick="giveAward({{ volunteer.id }})">Give Award</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages Section -->
+            <div id="messages" class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Messages</h3>
+                        <button class="btn btn-primary" onclick="showModal('newMessageModal')">New Message</button>
+                    </div>
+                    
+                    <!-- Tabs for Received and Sent Messages -->
+                    <div class="message-tabs">
+                        <button class="tab-button active" onclick="switchMessageTab('received')">Received Messages</button>
+                        <button class="tab-button" onclick="switchMessageTab('sent')">Sent Messages</button>
+                    </div>
+                    
+                    <!-- Received Messages -->
+                    <div id="received-messages" class="messages-list active">
+                        {% for message, sender in received_messages %}
+                        <div class="message-card {{ 'unread' if not message.is_read }}">
+                            <div class="message-header">
+                                <span class="message-sender">{{ sender.role|title }} - {{ sender.username }}</span>
+                                <span class="message-time">{{ message.timestamp|format_date }}</span>
+                            </div>
+                            <div class="message-subject">
+                                {% if message.subject %}
+                                    {{ message.subject }}
+                                {% else %}
+                                    <em>No subject</em>
+                                {% endif %}
+                            </div>
+                            <div class="message-content">{{ message.content }}</div>
+                            {% if not message.is_read %}
+                            <div class="message-actions">
+                                <button class="btn btn-primary btn-sm" onclick="markAsRead({{ message.id }})">Mark as Read</button>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        {% if not received_messages %}
+                        <div class="empty-state">
+                            <i class="fas fa-envelope-open"></i>
+                            <p>No received messages yet</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Sent Messages -->
+                    <div id="sent-messages" class="messages-list">
+                        {% for message, receiver in sent_messages %}
+                        <div class="message-card">
+                            <div class="message-header">
+                                <span class="message-sender">To: {{ receiver.role|title }} - {{ receiver.username }}</span>
+                                <span class="message-time">{{ message.timestamp|format_date }}</span>
+                            </div>
+                            <div class="message-subject">
+                                {% if message.subject %}
+                                    {{ message.subject }}
+                                {% else %}
+                                    <em>No subject</em>
+                                {% endif %}
+                            </div>
+                            <div class="message-content">{{ message.content }}</div>
+                        </div>
+                        {% endfor %}
+                        {% if not sent_messages %}
+                        <div class="empty-state">
+                            <i class="fas fa-paper-plane"></i>
+                            <p>No sent messages yet</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Awards Section -->
+            <div id="awards" class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Awards</h3>
+                    </div>
+                    <div class="awards-list">
+                        {% for award in awards %}
+                        <div class="award-card">
+                            <div class="award-header">
+                                <h4 class="award-title">{{ award.title }}</h4>
+                                <span class="award-date">{{ award.date }}</span>
+                            </div>
+                            <div class="award-meta">
+                                <span><i class="fas fa-user"></i> {{ award.recipient }}</span>
+                                <span><i class="fas fa-user-tie"></i> {{ award.giver }}</span>
+                            </div>
+                            <p>{{ award.description }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Section -->
+            <div id="profile" class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Profile Information</h3>
+                        <button class="btn btn-primary" onclick="showModal('editProfileModal')">Edit Profile</button>
+                    </div>
+                    <div class="profile-info">
+                        <div class="form-group">
+                            <label>Username</label>
+                            <p>{{ current_user.username }}</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <p>{{ current_user.email }}</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Role</label>
+                            <p>{{ current_user.role }}</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Constituency</label>
+                            <p>{{ current_user.constituency }}</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Locality</label>
+                            <p>{{ current_user.locality }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- New Message Modal -->
+    <div id="newMessageModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('newMessageModal')">&times;</span>
+            <h2>New Message</h2>
+            <form id="newMessageForm">
+                <div class="form-group">
+                    <label for="recipient">Recipient</label>
+                    <select id="recipient" name="recipient" required>
+                        <option value="admin">Admin</option>
+                        {% for volunteer in volunteers %}
+                        <option value="{{ volunteer.id }}">{{ volunteer.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="subject">Subject</label>
+                    <input type="text" id="subject" name="subject" required>
+                </div>
+                <div class="form-group">
+                    <label for="messageContent">Message</label>
+                    <textarea id="messageContent" name="content" required></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Send Message</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Hidden element to store admin user ID -->
+    {% for user in users %}
+        {% if user.role == 'admin' %}
+        <div data-role="admin" data-user-id="{{ user.id }}" style="display: none;"></div>
+        {% endif %}
+    {% endfor %}
+
+    <!-- Add Volunteer Modal -->
+    <div id="addVolunteerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('addVolunteerModal')">&times;</span>
+            <h2>Add Volunteer</h2>
+            <form id="addVolunteerForm">
+                <div class="form-group">
+                    <label for="volunteerName">Name</label>
+                    <input type="text" id="volunteerName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="volunteerEmail">Email</label>
+                    <input type="email" id="volunteerEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="volunteerPassword">Password</label>
+                    <input type="password" id="volunteerPassword" name="password" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Add Volunteer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Give Award Modal -->
+    <div id="giveAwardModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('giveAwardModal')">&times;</span>
+            <h2>Give Award</h2>
+            <form id="giveAwardForm">
+                <input type="hidden" id="awardRecipient" name="volunteer_id">
+                <div class="form-group">
+                    <label for="awardTitle">Award Title</label>
+                    <input type="text" id="awardTitle" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="awardDescription">Description</label>
+                    <textarea id="awardDescription" name="description" required></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Give Award</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="editProfileModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('editProfileModal')">&times;</span>
+            <h2>Edit Profile</h2>
+            <form id="editProfileForm">
+                <div class="form-group">
+                    <label for="editUsername">Username</label>
+                    <input type="text" id="editUsername" name="username" value="{{ current_user.username }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="editEmail">Email</label>
+                    <input type="email" id="editEmail" name="email" value="{{ current_user.email }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="editPassword">New Password (leave blank to keep current)</label>
+                    <input type="password" id="editPassword" name="password">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Update Profile</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Set Locality Modal -->
+    <div id="setLocalityModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('setLocalityModal')">&times;</span>
+            <h2>Set Locality</h2>
+            <form id="setLocalityForm">
+                <div class="form-group">
+                    <label for="locality">Locality</label>
+                    <input type="text" id="locality" name="locality" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Set Locality</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Report Modal -->
+    <div id="viewReportModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('viewReportModal')">&times;</span>
+            <h2>Report Details</h2>
+            <div id="reportDetails"></div>
+        </div>
+    </div>
+
+    <!-- Assign Volunteer Modal -->
+    <div id="assignVolunteerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('assignVolunteerModal')">&times;</span>
+            <h2>Assign Volunteer</h2>
+            <form id="assignVolunteerForm">
+                <input type="hidden" id="reportId" name="report_id">
+                <div class="form-group">
+                    <label for="volunteerSelect">Select Volunteer</label>
+                    <select id="volunteerSelect" name="volunteer_id" required>
+                        {% for volunteer in volunteers %}
+                        <option value="{{ volunteer.id }}">{{ volunteer.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Assign Volunteer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='teamhead_dashboard.js') }}"></script>
+</body>
+</html>
