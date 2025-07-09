@@ -1,0 +1,485 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Messages{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>Admin Dashboard</h2>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('admin_dashboard') }}" class="nav-link">
+                <i class="fas fa-chart-line"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ url_for('admin_users') }}" class="nav-link">
+                <i class="fas fa-users"></i>
+                <span>Users</span>
+            </a>
+            <a href="{{ url_for('admin_reports') }}" class="nav-link">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Reports</span>
+            </a>
+            <a href="{{ url_for('admin_messages') }}" class="nav-link active">
+                <i class="fas fa-envelope"></i>
+                <span>Messages</span>
+                {% if unread_messages_count > 0 %}
+                <span class="badge">{{ unread_messages_count }}</span>
+                {% endif %}
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <a href="{{ url_for('logout') }}" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="content-header">
+            <h1>Messages</h1>
+            <button class="btn btn-primary" onclick="showNewMessageModal()">
+                <i class="fas fa-plus"></i> New Message
+            </button>
+        </div>
+
+        <div class="messages-container">
+            <!-- Messages List -->
+            <div class="messages-list">
+                {% for message in messages %}
+                <div class="message-item {% if not message.is_read and message.receiver_id == current_user.id %}unread{% endif %}"
+                     onclick="viewMessage({{ message.id }})">
+                    <div class="message-sender">
+                        <i class="fas {% if message.sender_id == current_user.id %}fa-paper-plane{% else %}fa-user{% endif %}"></i>
+                        <span>
+                            {% if message.sender_id == current_user.id %}
+                                To: {{ message.receiver.username }} ({{ message.receiver.role|title }})
+                            {% else %}
+                                From: {{ message.sender.username }} ({{ message.sender.role|title }})
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="message-subject">
+                        {% if message.subject %}
+                            {{ message.subject }}
+                        {% else %}
+                            <em>No subject</em>
+                        {% endif %}
+                    </div>
+                    <div class="message-time">{{ message.timestamp|format_date }}</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Message Detail -->
+            <div class="message-detail" id="messageDetail">
+                <div class="message-detail-placeholder">
+                    <i class="fas fa-envelope-open"></i>
+                    <p>Select a message to view</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Message Modal -->
+<div class="modal" id="newMessageModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>New Message</h2>
+            <button class="close-btn" onclick="closeModal('newMessageModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="newMessageForm" onsubmit="handleNewMessage(event)">
+            <div class="form-group">
+                <label for="recipient">To:</label>
+                <select id="recipient" name="recipient" required>
+                    <option value="">Select recipient...</option>
+                    <optgroup label="Team Heads">
+                        {% for teamhead in teamheads %}
+                        <option value="{{ teamhead.id }}">{{ teamhead.username }}</option>
+                        {% endfor %}
+                    </optgroup>
+                    <optgroup label="Users">
+                        {% for user in users %}
+                        <option value="{{ user.id }}">{{ user.username }}</option>
+                        {% endfor %}
+                    </optgroup>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="subject">Subject:</label>
+                <input type="text" id="subject" name="subject" required>
+            </div>
+            <div class="form-group">
+                <label for="content">Message:</label>
+                <textarea id="content" name="content" rows="5" required></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('newMessageModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Send Message</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.admin-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #2c3e50;
+    color: white;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    padding: 1rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-nav {
+    margin-top: 1rem;
+    flex-grow: 1;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    transition: background-color 0.3s;
+}
+
+.nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-link.active {
+    background-color: #3498db;
+}
+
+.nav-link i {
+    margin-right: 0.75rem;
+    width: 20px;
+    text-align: center;
+}
+
+.badge {
+    background-color: #e74c3c;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    margin-left: auto;
+}
+
+.sidebar-footer {
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.logout-btn {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.logout-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.main-content {
+    flex-grow: 1;
+    padding: 2rem;
+    background-color: #f5f6fa;
+}
+
+.content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.messages-container {
+    display: flex;
+    gap: 2rem;
+    height: calc(100vh - 200px);
+}
+
+.messages-list {
+    width: 300px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+}
+
+.message-item {
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.message-item:hover {
+    background-color: #f8f9fa;
+}
+
+.message-item.unread {
+    background-color: #e3f2fd;
+    font-weight: 500;
+}
+
+.message-sender {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    color: #666;
+}
+
+.message-subject {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.message-time {
+    font-size: 0.875rem;
+    color: #999;
+}
+
+.message-detail {
+    flex-grow: 1;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+.message-detail-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #999;
+}
+
+.message-detail-placeholder i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.modal-content {
+    position: relative;
+    background-color: white;
+    margin: 10vh auto;
+    padding: 2rem;
+    width: 90%;
+    max-width: 600px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-primary {
+    background-color: #3498db;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #2980b9;
+}
+
+.btn-secondary {
+    background-color: #95a5a6;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #7f8c8d;
+}
+</style>
+
+<script>
+function showNewMessageModal() {
+    document.getElementById('newMessageModal').style.display = 'block';
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+async function handleNewMessage(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = {
+        recipient: form.recipient.value,
+        subject: form.subject.value,
+        content: form.content.value
+    };
+    
+    try {
+        const response = await fetch('/send_message', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            closeModal('newMessageModal');
+            form.reset();
+            alert('Message sent successfully');
+            location.reload();
+        } else {
+            alert(data.error || 'Failed to send message');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred while sending the message');
+    }
+}
+
+async function viewMessage(messageId) {
+    try {
+        const response = await fetch(`/get_message/${messageId}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const message = data.data;
+            const detailContainer = document.getElementById('messageDetail');
+            
+            // Determine the display text based on whether the current user is the sender or receiver
+            const fromToText = message.is_sender ? 
+                `To: ${message.receiver_username} (${message.receiver_role})` : 
+                `From: ${message.sender_username} (${message.sender_role})`;
+            
+            detailContainer.innerHTML = `
+                <div class="message-header">
+                    ${message.subject ? `<h2>${message.subject}</h2>` : ''}
+                    <div class="message-meta">
+                        <span>${fromToText}</span>
+                        <span>Date: ${message.timestamp}</span>
+                    </div>
+                </div>
+                <div class="message-content">
+                    ${message.content}
+                </div>
+                ${!message.is_sender ? `
+                <div class="message-actions">
+                    <button class="btn btn-primary" onclick="replyToMessage(${message.sender_id})">
+                        <i class="fas fa-reply"></i> Reply
+                    </button>
+                </div>
+                ` : ''}
+            `;
+            
+            // Mark message as read if it's unread and the current user is the receiver
+            if (!message.is_sender && !document.querySelector(`.message-item[onclick="viewMessage(${messageId})"]`).classList.contains('unread')) {
+                await fetch(`/mark_message_read/${messageId}`, { method: 'POST' });
+            }
+        } else {
+            console.error('Error loading message:', data.error);
+            alert(data.error || 'Failed to load message');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred while loading the message. Please try again.');
+    }
+}
+
+function replyToMessage(recipientId) {
+    const modal = document.getElementById('newMessageModal');
+    const recipientSelect = document.getElementById('recipient');
+    
+    recipientSelect.value = recipientId;
+    modal.style.display = 'block';
+}
+</script>
+{% endblock %} 
